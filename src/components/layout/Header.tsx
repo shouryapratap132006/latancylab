@@ -1,0 +1,57 @@
+import { Play, Square, Activity } from 'lucide-react';
+import { useSimulationStore } from '../../store/useSimulationStore';
+import { engine } from '../../simulation/Engine';
+
+export const Header = () => {
+    const { config, startSimulation, stopSimulation, setConfig } = useSimulationStore();
+
+    const handleStart = () => {
+        engine.start();
+    };
+
+    const handleStop = () => {
+        engine.stop();
+    };
+
+    return (
+        <header className="h-16 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-panel)] flex items-center justify-between px-6 z-10 relative shrink-0">
+            <div className="flex items-center gap-3">
+                <Activity className="w-6 h-6 text-brand" />
+                <h1 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent !m-0 !text-xl !tracking-normal">
+                    Latency Lab
+                </h1>
+            </div>
+
+            <div className="flex items-center gap-6">
+                <div className="flex items-center gap-3">
+                    <span className="text-sm text-[var(--color-text-secondary)] w-32">Load: {config.loadRps} req/s</span>
+                    <input
+                        type="range"
+                        min="1" max="1000"
+                        value={config.loadRps}
+                        onChange={(e) => setConfig({ loadRps: parseInt(e.target.value) })}
+                        className="w-48 accent-[var(--color-brand-500)] cursor-pointer"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {!config.isRunning ? (
+                        <button
+                            onClick={handleStart}
+                            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-brand-500)] hover:bg-[#9024e0] text-white rounded-lg transition-all shadow-lg shadow-purple-500/20 active:scale-95 cursor-pointer border-none font-medium text-sm"
+                        >
+                            <Play className="w-4 h-4 fill-current" /> Start Simulation
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleStop}
+                            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-bg-panel-hover)] border border-[var(--color-border-subtle)] hover:bg-[#2d313f] text-white rounded-lg transition-all active:scale-95 cursor-pointer font-medium text-sm"
+                        >
+                            <Square className="w-4 h-4 fill-current text-[var(--color-status-red)]" /> Stop Simulation
+                        </button>
+                    )}
+                </div>
+            </div>
+        </header>
+    );
+};
