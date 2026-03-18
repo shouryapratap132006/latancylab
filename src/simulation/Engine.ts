@@ -61,16 +61,20 @@ class SimulationEngine {
             for (let i = 0; i < actualGenerations; i++) {
                 // Pick a random client node
                 const client = clientNodes[Math.floor(Math.random() * clientNodes.length)];
+                const nextHop = this.getNextHop(client.id, edges);
 
                 newRequests.push({
                     id: uuidv4(),
                     sourceNodeId: client.id,
                     currentNodeId: client.id,
-                    targetNodeId: this.getNextNodeId(client.id, edges),
+                    targetNodeId: nextHop?.targetId || null,
                     status: 'pending',
                     startTime: now,
                     accumulatedLatency: 0,
-                    path: [client.id]
+                    path: [client.id],
+                    nodeProgressMs: 0,
+                    currentEdgeId: nextHop?.edgeId,
+                    progress: 0
                 });
             }
             addRequests(newRequests);
@@ -93,6 +97,7 @@ class SimulationEngine {
             }
 
             req.accumulatedLatency += deltaMs;
+            req.nodeProgressMs = (req.nodeProgressMs || 0) + deltaMs;
 
             // Find current node
             const currentNode = nodes.find(n => n.id === req.currentNodeId);
@@ -106,22 +111,25 @@ class SimulationEngine {
 
             // Calculate node processing time based on properties and failure injection
             const processingTimeReq = this.calculateProcessingTime(currentNode, req);
+            
+            // Calculate visual progress along the edge approaching this node (or at it)
+            // If processing time is 0 (like client), instantly 1. Else mapped from 0 to 1 based on nodeProgressMs
+            req.progress = processingTimeReq > 0 ? Math.min(1, req.nodeProgressMs / processingTimeReq) : 1;
 
-            if (req.accumulatedLatency >= processingTimeReq) {
+            if (req.nodeProgressMs >= processingTimeReq) {
                 // Done with this node, move to next
-                const nextNodeId = this.getNextNodeId(currentNode.id, edges);
+                const nextHop = this.getNextHop(currentNode.id, edges);
 
-                if (nextNodeId) {
-                    req.currentNodeId = nextNodeId;
-                    req.targetNodeId = this.getNextNodeId(nextNodeId, edges);
-                    req.path.push(nextNodeId);
-                    // Reset accumulated for the next node, or keep a total separate?
-                    // Let's keep accumulatedLatency as total, and track node-specific in a different way,
-                    // OR assume moving instantly but waiting at node.
-                    // For simplicity, we just keep accumulating. If total accumulated > sum of required latencies?
-                    // Let's adjust: req.accumulatedLatency is TOTAL time.
-                    // We need to know when we entered the current node.
-                    // To keep it simple, let's deduct the processing time required for THIS node from a "nodeProgress" counter.
+                if (nextHop) {
+                    req.currentNodeId = nextHop.targetId;
+                    
+                    const futureHop = this.getNextHop(nextHop.targetId, edges);
+                    req.targetNodeId = futureHop?.targetId || null;
+                    
+                    req.path.push(nextHop.targetId);
+                    req.currentEdgeId = nextHop.edgeId;
+                    req.nodeProgressMs = 0; // Reset for the next node
+                    req.progress = 0;
                 } else {
                     // No next node, request completed
                     req.status = 'completed';
@@ -147,12 +155,12 @@ class SimulationEngine {
         updateMetrics((prev) => this.calculateNewMetrics(prev, actualGenerations, completedCount, failedCount, accumulatedLatencySum, deltaMs, requests.length));
     }
 
-    private getNextNodeId(currentId: string, edges: SystemEdge[]): string | null {
+    private getNextHop(currentId: string, edges: SystemEdge[]): { targetId: string, edgeId: string } | null {
         const outgoingEdges = edges.filter(e => e.source === currentId);
         if (outgoingEdges.length === 0) return null;
         // Simple random routing for now. In a real load balancer, apply algorithm.
         const edge = outgoingEdges[Math.floor(Math.random() * outgoingEdges.length)];
-        return edge.target;
+        return { targetId: edge.target, edgeId: edge.id };
     }
 
     private calculateProcessingTime(node: SystemNode, req: SimulatedRequest): number {

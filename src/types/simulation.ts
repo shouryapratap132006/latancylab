@@ -28,6 +28,9 @@ export interface SimulatedRequest {
     startTime: number;
     accumulatedLatency: number;
     path: string[]; // Node IDs visited
+    nodeProgressMs?: number; // Time spent processing at the current node / edge
+    currentEdgeId?: string; // ID of the edge it is currently traversing visually
+    progress?: number; // 0 to 1 value representing traversal progress across currentEdgeId
 }
 
 export interface NodeMetrics {

@@ -11,10 +11,15 @@ import 'reactflow/dist/style.css';
 import { v4 as uuidv4 } from 'uuid';
 import { useArchitectureStore } from '../../store/useArchitectureStore';
 import { CustomNode } from './CustomNode';
+import { AnimatedEdge } from './AnimatedEdge';
 import { SystemNode, SystemNodeType } from '../../types';
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
+};
+
+const edgeTypes = {
+    animated: AnimatedEdge,
 };
 
 const ArchitectureCanvas = () => {
@@ -95,11 +100,13 @@ const ArchitectureCanvas = () => {
                 onNodeClick={(_, node) => setSelectedNodeId(node.id)}
                 onPaneClick={() => setSelectedNodeId(null)}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 fitView
                 className="bg-[#0f1117]"
                 defaultEdgeOptions={{
+                    type: 'animated',
                     style: { stroke: 'var(--color-border-subtle)', strokeWidth: 2 },
-                    animated: true // Set to true to show flow!
+                    animated: false // We are drawing custom animated particles now, no need for the default stroke-dasharray animation
                 }}
             >
                 <Background color="var(--color-border-subtle)" gap={16} size={1} />
