@@ -34,7 +34,7 @@ class SimulationEngine {
         const deltaMs = now - this.lastTick;
         this.lastTick = now;
 
-        const { config, requests, updateRequests, addRequests, updateMetrics, updateAllNodeMetrics, nodeMetrics } = useSimulationStore.getState();
+        const { config, requests, updateRequests, removeRequests, addRecentRequests, addRequests, updateMetrics, updateAllNodeMetrics, nodeMetrics } = useSimulationStore.getState();
         const { nodes, edges } = useArchitectureStore.getState();
 
         if (!config.isRunning || nodes.length === 0) return;
@@ -72,6 +72,7 @@ class SimulationEngine {
         }
 
         const updatedRequests: SimulatedRequest[] = [];
+        const finishedRequests: SimulatedRequest[] = [];
         let completedCount = 0;
         let failedCount = 0;
         let accumulatedLatencySum = 0;
@@ -83,6 +84,7 @@ class SimulationEngine {
         // 2. Process edge traversal
         for (const req of requests) {
             if (req.status === 'completed' || req.status === 'failed' || req.status === 'dropped') {
+                finishedRequests.push(req);
                 continue;
             }
 
@@ -133,7 +135,11 @@ class SimulationEngine {
                 }
             }
 
-            updatedRequests.push(req);
+            if (req.status === 'completed' || req.status === 'failed' || req.status === 'dropped') {
+                finishedRequests.push(req);
+            } else {
+                updatedRequests.push(req);
+            }
         }
 
         const newNodeMetricsMap: Record<string, NodeMetrics> = {};
@@ -172,6 +178,7 @@ class SimulationEngine {
                         req.status = 'completed';
                         completedCount++;
                         accumulatedLatencySum += req.accumulatedLatency;
+                        finishedRequests.push(req);
                     }
                 });
             }
@@ -199,6 +206,11 @@ class SimulationEngine {
 
         if (updatedRequests.length > 0) {
             updateRequests(updatedRequests);
+        }
+
+        if (finishedRequests.length > 0) {
+            addRecentRequests(finishedRequests);
+            removeRequests(finishedRequests.map(r => r.id));
         }
 
         updateAllNodeMetrics(newNodeMetricsMap);

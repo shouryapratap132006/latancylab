@@ -1,9 +1,13 @@
-import { Play, Square, Activity } from 'lucide-react';
+import { Play, Square, Activity, FileSearch, DollarSign } from 'lucide-react';
 import { useSimulationStore } from '../../store/useSimulationStore';
 import { engine } from '../../simulation/Engine';
 
 export const Header = () => {
-    const { config, startSimulation, stopSimulation, setConfig } = useSimulationStore();
+    const { 
+        config, startSimulation, stopSimulation, setConfig,
+        isTracingVisible, setTracingVisible,
+        isCostVisible, setCostVisible
+    } = useSimulationStore();
 
     const handleStart = () => {
         engine.start();
@@ -35,6 +39,32 @@ export const Header = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setTracingVisible(!isTracingVisible)}
+                        className={`flex items-center justify-center p-2 rounded-lg border transition-all ${
+                            isTracingVisible 
+                                ? 'bg-[var(--color-brand-500)]/20 border-[var(--color-brand-500)] text-[var(--color-brand-400)]' 
+                                : 'bg-[var(--color-bg-panel-hover)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:text-white hover:border-[var(--color-brand-500)]/50'
+                        }`}
+                        title="Toggle Tracing Panel"
+                    >
+                        <FileSearch className="w-4 h-4" />
+                    </button>
+                    
+                    <button
+                        onClick={() => setCostVisible(!isCostVisible)}
+                        className={`flex items-center justify-center p-2 rounded-lg border transition-all ${
+                            isCostVisible 
+                                ? 'bg-green-500/20 border-green-500 text-green-400' 
+                                : 'bg-[var(--color-bg-panel-hover)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:text-white hover:border-green-500/50'
+                        }`}
+                        title="Toggle Cost Panel"
+                    >
+                        <DollarSign className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-px h-6 bg-[var(--color-border-subtle)] mx-2" />
+
                     {!config.isRunning ? (
                         <button
                             onClick={handleStart}

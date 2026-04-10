@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { Header } from './Header';
 import { engine } from '../../simulation/Engine';
+import { TracingPanel } from '../../features/tracing/TracingPanel';
+import { CostPanel } from '../../features/cost/CostPanel';
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -27,6 +29,8 @@ export const MainLayout = ({ children, sidebar, propertiesPanel, metricsDashboar
 
                 <main className="flex-1 relative bg-[#0f1117] overflow-hidden">
                     {children}
+                    <TracingPanel />
+                    <CostPanel />
                 </main>
 
                 <div className="w-80 border-l border-[var(--color-border-subtle)] bg-[var(--color-bg-panel)]/95 backdrop-blur flex flex-col z-10 relative overflow-y-auto">

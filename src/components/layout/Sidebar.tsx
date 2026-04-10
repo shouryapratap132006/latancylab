@@ -1,6 +1,6 @@
 import React from 'react';
 import { Server, Database, Activity, Layers, HardDrive, MessageSquare, BookOpen } from 'lucide-react';
-import { scenarios } from '../../features/scenarios/templates';
+import { scenarioConfigs } from '../../features/scenarios/scenarioConfigs';
 import { useArchitectureStore } from '../../store/useArchitectureStore';
 
 const nodeTypes = [
@@ -20,15 +20,18 @@ export const Sidebar = () => {
         event.dataTransfer.effectAllowed = 'move';
     };
 
-    const loadScenario = (key: keyof typeof scenarios) => {
+    const loadScenario = (key: string) => {
+        if (!key) return;
         // Basic confirmation
         if (confirm("Replace current architecture with this scenario?")) {
             clear();
             // setTimeout to allow clear to flush
             setTimeout(() => {
-                const s = scenarios[key];
-                setNodes(s.nodes);
-                setEdges(s.edges);
+                const s = scenarioConfigs[key];
+                if (s) {
+                    setNodes(s.nodes);
+                    setEdges(s.edges);
+                }
             }, 50);
         }
     };
@@ -60,17 +63,26 @@ export const Sidebar = () => {
                     <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] flex items-center gap-2 mb-4">
                         <BookOpen className="w-4 h-4" /> Scenarios
                     </h2>
-                    <div className="space-y-3">
-                        {Object.entries(scenarios).map(([key, s]) => (
-                            <div
-                                key={key}
-                                onClick={() => loadScenario(key)}
-                                className="p-3 bg-[var(--color-bg-base)] border border-[var(--color-border-subtle)] rounded-lg cursor-pointer hover:border-[var(--color-brand-500)] hover:shadow-[0_0_10px_rgba(170,59,255,0.15)] transition-all group"
-                            >
-                                <div className="text-sm font-medium text-[var(--color-brand-500)] mb-1 group-hover:text-purple-400">{s.name}</div>
-                                <div className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{s.description}</div>
-                            </div>
-                        ))}
+                    
+                    <div className="flex flex-col gap-2">
+                        <select 
+                            className="w-full bg-[var(--color-bg-base)] border border-[var(--color-border-subtle)] rounded-lg p-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-brand-500)]"
+                            onChange={(e) => {
+                                loadScenario(e.target.value);
+                                e.target.value = ""; // Reset after selection
+                            }}
+                            defaultValue=""
+                        >
+                            <option value="" disabled>Load a scenario...</option>
+                            {Object.entries(scenarioConfigs).map(([key, s]) => (
+                                <option key={key} value={key}>
+                                    {s.name}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-[var(--color-text-secondary)] mt-2">
+                            Selecting a scenario will replace the current architecture.
+                        </p>
                     </div>
                 </div>
             </div>

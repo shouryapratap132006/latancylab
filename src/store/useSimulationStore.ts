@@ -5,6 +5,10 @@ interface SimulationState {
     config: SimulationConfig;
     metrics: SimulationMetrics;
     requests: SimulatedRequest[];
+    recentRequests: SimulatedRequest[];
+    selectedRequestId: string | null;
+    isTracingVisible: boolean;
+    isCostVisible: boolean;
     nodeMetrics: Record<string, NodeMetrics>;
 
     setConfig: (config: Partial<SimulationConfig>) => void;
@@ -12,6 +16,10 @@ interface SimulationState {
     updateMetrics: (fn: (prev: SimulationMetrics) => SimulationMetrics) => void;
     setNodeMetrics: (nodeId: string, metrics: Partial<NodeMetrics>) => void;
     updateAllNodeMetrics: (metricsMap: Record<string, NodeMetrics>) => void;
+    
+    setSelectedRequestId: (id: string | null) => void;
+    setTracingVisible: (visible: boolean) => void;
+    setCostVisible: (visible: boolean) => void;
 
     startSimulation: () => void;
     stopSimulation: () => void;
@@ -19,6 +27,7 @@ interface SimulationState {
     addRequests: (reqs: SimulatedRequest[]) => void;
     updateRequests: (reqs: SimulatedRequest[]) => void;
     removeRequests: (ids: string[]) => void;
+    addRecentRequests: (reqs: SimulatedRequest[]) => void;
     clearRequests: () => void;
 
     resetMetrics: () => void;
@@ -45,6 +54,10 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     config: initialConfig,
     metrics: initialMetrics,
     requests: [],
+    recentRequests: [],
+    selectedRequestId: null,
+    isTracingVisible: false,
+    isCostVisible: false,
     nodeMetrics: {},
 
     setConfig: (configUpdate) => set({ config: { ...get().config, ...configUpdate } }),
@@ -64,6 +77,10 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     })),
 
     updateAllNodeMetrics: (metricsMap) => set({ nodeMetrics: metricsMap }),
+
+    setSelectedRequestId: (id) => set({ selectedRequestId: id }),
+    setTracingVisible: (visible) => set({ isTracingVisible: visible }),
+    setCostVisible: (visible) => set({ isCostVisible: visible }),
 
     startSimulation: () => set({ config: { ...get().config, isRunning: true } }),
 
@@ -87,7 +104,15 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         set({ requests: get().requests.filter(r => !idSet.has(r.id)) });
     },
 
-    clearRequests: () => set({ requests: [] }),
+    addRecentRequests: (newReqs) => {
+        set((state) => {
+            const combined = [...newReqs, ...state.recentRequests];
+            // Keep maximum 50 recent requests to prevent memory leak
+            return { recentRequests: combined.slice(0, 50) };
+        });
+    },
+
+    clearRequests: () => set({ requests: [], recentRequests: [], selectedRequestId: null }),
 
     resetMetrics: () => set({ metrics: initialMetrics }),
 }));
