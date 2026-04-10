@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Handle, Position } from 'reactflow';
 import { Server, Database, Box, Layers, HardDrive, MessageSquare, Activity } from 'lucide-react';
 import { SystemNodeData } from '../../types';
+import { useSimulationStore } from '../../store/useSimulationStore';
 
 // Icons mapping based on type
 const iconMap = {
@@ -23,14 +24,35 @@ const getStatusColor = (status: SystemNodeData['status']) => {
     }
 };
 
-export const CustomNode = memo(({ data, selected }: { data: SystemNodeData, selected?: boolean }) => {
+export const CustomNode = memo(({ id, data, selected }: { id: string, data: SystemNodeData, selected?: boolean }) => {
     const isClient = data.type === 'client';
+    const isRunning = useSimulationStore(state => state.config.isRunning);
+    const metric = useSimulationStore(state => state.nodeMetrics[id]);
+    
+    // Dynamic status computation based on load
+    let derivedStatus = data.status;
+    let loadRatio = metric?.loadRatio || 0;
+    const queueSize = metric?.queueSize || 0;
+
+    if (data.isFailing || derivedStatus === 'offline') {
+        derivedStatus = 'offline';
+    } else if (isRunning) {
+        if (loadRatio > 0.85) derivedStatus = 'overloaded';
+        else if (loadRatio >= 0.6) derivedStatus = 'high_load';
+        else derivedStatus = 'healthy';
+    }
+
+    const queueThresholdWarning = queueSize > 5; // Configurable threshold
 
     return (
-        <div className={`relative flex items-center gap-3 p-3 rounded-xl border-2 transition-all shadow-xl bg-[var(--color-bg-panel)] backdrop-blur-md min-w-[160px]
+        <div className={`relative flex flex-col gap-2 p-3 rounded-xl border-2 transition-all shadow-xl bg-[var(--color-bg-panel)] backdrop-blur-md min-w-[160px]
       ${selected ? 'border-[var(--color-brand-500)] shadow-[0_0_15px_rgba(170,59,255,0.3)]' : 'border-[var(--color-border-subtle)]'}
       ${data.isFailing ? 'animate-pulse border-[var(--color-status-red)] opacity-80' : ''}
+      ${isRunning && derivedStatus === 'overloaded' ? 'border-[var(--color-status-red)] shadow-[0_0_20px_rgba(244,63,94,0.4)]' : ''}
+      ${isRunning && queueThresholdWarning ? 'shadow-[0_0_30px_rgba(244,63,94,0.6)]' : ''}
     `}>
+            {/* Top row with icon & title */}
+            <div className="flex items-center gap-3">
 
             {!isClient && (
                 <Handle
@@ -49,11 +71,21 @@ export const CustomNode = memo(({ data, selected }: { data: SystemNodeData, sele
                 <span className="text-[10px] uppercase text-[var(--color-text-muted)] tracking-wider">
                     {data.type}
                 </span>
+                </div>
             </div>
 
             <div className="absolute -top-1 -right-1 flex gap-1">
-                <div className={`w-3 h-3 rounded-full ${getStatusColor(data.status)} border-2 border-[var(--color-bg-panel)]`} />
+                <div className={`w-3 h-3 rounded-full ${getStatusColor(derivedStatus)} border-2 border-[var(--color-bg-panel)] transition-colors duration-300`} />
             </div>
+
+            {isRunning && !isClient && (
+                <div className="w-full flex items-center justify-between mt-1 text-[10px] font-mono border-t border-[var(--color-border-subtle)] pt-1">
+                    <span className="text-[var(--color-text-muted)]">Queue:</span>
+                    <span className={`${queueThresholdWarning ? 'text-[var(--color-status-red)] font-bold animate-pulse' : 'text-[var(--color-brand-400)]'}`}>
+                        {queueSize}
+                    </span>
+                </div>
+            )}
 
             <Handle
                 type="source"

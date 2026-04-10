@@ -37,17 +37,17 @@ export const MetricsDashboard = () => {
             <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
                 {React.cloneElement(icon, { className: "w-24 h-24" })}
             </div>
-            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-2 z-10">
-                {React.cloneElement(icon, { className: `w-4 h-4 ${color}` })}
-                <span className="text-sm font-medium">{title}</span>
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-2 z-10 w-full">
+                {React.cloneElement(icon, { className: `w-4 h-4 ${color} shrink-0` })}
+                <span className="text-sm font-medium truncate">{title}</span>
             </div>
-            <div className="flex items-baseline gap-1 z-10">
-                <span className="text-3xl font-bold font-mono tracking-tight text-[var(--color-text-primary)]">
+            <div className="flex items-baseline gap-1 z-10 w-full min-w-0">
+                <span className="text-2xl font-bold font-mono tracking-tight text-[var(--color-text-primary)] truncate">
                     {typeof value === 'number' ?
                         (value % 1 === 0 ? value : value.toFixed(1))
                         : value}
                 </span>
-                <span className="text-sm font-medium text-[var(--color-text-muted)]">{unit}</span>
+                <span className="text-xs font-medium text-[var(--color-text-muted)] shrink-0">{unit}</span>
             </div>
         </div>
     );

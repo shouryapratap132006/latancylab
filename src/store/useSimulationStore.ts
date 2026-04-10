@@ -1,14 +1,17 @@
 import { create } from 'zustand';
-import { SimulationConfig, SimulationMetrics, SimulatedRequest } from '../types';
+import { SimulationConfig, SimulationMetrics, SimulatedRequest, NodeMetrics } from '../types';
 
 interface SimulationState {
     config: SimulationConfig;
     metrics: SimulationMetrics;
     requests: SimulatedRequest[];
+    nodeMetrics: Record<string, NodeMetrics>;
 
     setConfig: (config: Partial<SimulationConfig>) => void;
     setMetrics: (metrics: Partial<SimulationMetrics>) => void;
     updateMetrics: (fn: (prev: SimulationMetrics) => SimulationMetrics) => void;
+    setNodeMetrics: (nodeId: string, metrics: Partial<NodeMetrics>) => void;
+    updateAllNodeMetrics: (metricsMap: Record<string, NodeMetrics>) => void;
 
     startSimulation: () => void;
     stopSimulation: () => void;
@@ -42,6 +45,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     config: initialConfig,
     metrics: initialMetrics,
     requests: [],
+    nodeMetrics: {},
 
     setConfig: (configUpdate) => set({ config: { ...get().config, ...configUpdate } }),
 
@@ -49,11 +53,24 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
 
     updateMetrics: (fn) => set({ metrics: fn(get().metrics) }),
 
+    setNodeMetrics: (nodeId, metricsUpdate) => set(state => ({
+        nodeMetrics: {
+            ...state.nodeMetrics,
+            [nodeId]: {
+                ...(state.nodeMetrics[nodeId] || { queueSize: 0, activeConnections: 0, processedCount: 0, errorCount: 0, processingCapacity: 100, loadRatio: 0 }),
+                ...metricsUpdate
+            }
+        }
+    })),
+
+    updateAllNodeMetrics: (metricsMap) => set({ nodeMetrics: metricsMap }),
+
     startSimulation: () => set({ config: { ...get().config, isRunning: true } }),
 
     stopSimulation: () => set({
         config: { ...get().config, isRunning: false },
-        requests: []
+        requests: [],
+        nodeMetrics: {}
     }),
 
     addRequests: (newReqs) => set({ requests: [...get().requests, ...newReqs] }),

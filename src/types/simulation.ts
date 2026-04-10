@@ -38,4 +38,6 @@ export interface NodeMetrics {
     activeConnections: number;
     processedCount: number;
     errorCount: number;
+    processingCapacity: number;
+    loadRatio: number;
 }
